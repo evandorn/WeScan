@@ -11,9 +11,10 @@ import AVFoundation
 
 /// A set of methods that your delegate object must implement to get capture image.
 /// If camera module doesn't work it will send error back to your delegate object.
-public protocol CameraScannerViewOutputDelegate: class {
+@objc public protocol CameraScannerViewOutputDelegate: class {
     func captureImageFailWithError(error: Error)
-    func captureImageSuccess(image: UIImage, withQuad quad: Quadrilateral?)
+    func captureImageSuccess(image: UIImage)
+    //    func captureImageSuccess(image: UIImage, withQuad quad: Quadrilateral?)
 }
 
 /// A view controller that manages the camera module and auto capture of rectangle shape of document
@@ -26,9 +27,11 @@ public final class CameraScannerViewController: UIViewController {
             CaptureSession.current.isAutoScanEnabled = isAutoScanEnabled
         }
     }
+    
+    public var isTapToFocusEnabled: Bool = false
 
     /// The callback to caller view to send back success or fail.
-    public weak var delegate: CameraScannerViewOutputDelegate?
+   @objc public weak var delegate: CameraScannerViewOutputDelegate?
 
     private var captureSessionManager: CaptureSessionManager?
     private let videoPreviewLayer = AVCaptureVideoPreviewLayer()
@@ -120,6 +123,7 @@ public final class CameraScannerViewController: UIViewController {
         let touchPoint = touch.location(in: view)
         let convertedTouchPoint: CGPoint = videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: touchPoint)
         
+        if isTapToFocusEnabled {
         CaptureSession.current.removeFocusRectangleIfNeeded(focusRectangle, animated: false)
         
         focusRectangle = FocusRectangleView(touchPoint: touchPoint)
@@ -133,14 +137,15 @@ public final class CameraScannerViewController: UIViewController {
             guard let captureSessionManager = captureSessionManager else { return }
             captureSessionManager.delegate?.captureSessionManager(captureSessionManager, didFailWithError: error)
             return
+            }
         }
     }
     
-    public func capture() {
+    @objc public func capture() {
         captureSessionManager?.capturePhoto()
     }
     
-    public func toggleFlash() {
+    @objc public func toggleFlash() {
         let state = CaptureSession.current.toggleFlash()
         switch state {
         case .on:
@@ -152,8 +157,12 @@ public final class CameraScannerViewController: UIViewController {
         }
     }
 
-    public func toggleAutoScan() {
+    @objc public func toggleAutoScan() {
         isAutoScanEnabled.toggle()
+    }
+    
+    @objc public func toggleTapToFocus() {
+        isTapToFocusEnabled.toggle()
     }
 }
 
@@ -169,7 +178,8 @@ extension CameraScannerViewController: RectangleDetectionDelegateProtocol {
     func captureSessionManager(_ captureSessionManager: CaptureSessionManager,
                                didCapturePicture picture: UIImage,
                                withQuad quad: Quadrilateral?) {
-        delegate?.captureImageSuccess(image: picture, withQuad: quad)
+        delegate?.captureImageSuccess(image: picture)
+        // delegate?.captureImageSuccess(image: picture, withQuad: quad)
     }
     
     func captureSessionManager(_ captureSessionManager: CaptureSessionManager,
