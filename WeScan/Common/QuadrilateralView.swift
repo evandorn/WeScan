@@ -55,7 +55,7 @@ final class QuadrilateralView: UIView {
         }
     }
 
-    /// Set stroke color of image rect and coner.
+    /// Set stroke color of image rect and corner.
     public var strokeColor: CGColor? {
         didSet {
             quadLayer.strokeColor = strokeColor
