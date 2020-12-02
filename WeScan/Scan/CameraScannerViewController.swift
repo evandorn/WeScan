@@ -29,6 +29,8 @@ public final class CameraScannerViewController: UIViewController {
     }
     
     public var isTapToFocusEnabled: Bool = false
+    
+    @objc public var isTorchEnabled: Bool = true // set torch enabled to true by default
 
     /// The callback to caller view to send back success or fail.
    @objc public weak var delegate: CameraScannerViewOutputDelegate?
@@ -50,12 +52,21 @@ public final class CameraScannerViewController: UIViewController {
         setupView()
     }
     
+    deinit {
+        // Teardown of CameraScannerView
+    }
+    
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         CaptureSession.current.isEditing = false
         quadView.removeQuadrilateral()
         captureSessionManager?.start()
         UIApplication.shared.isIdleTimerDisabled = true
+        
+    }
+    
+    override public func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
     }
     
     override public func viewDidLayoutSubviews() {
@@ -86,6 +97,15 @@ public final class CameraScannerViewController: UIViewController {
         captureSessionManager?.delegate = self
         
         NotificationCenter.default.addObserver(self, selector: #selector(subjectAreaDidChange), name: Notification.Name.AVCaptureDeviceSubjectAreaDidChange, object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(captureSessionBegan), name: Notification.Name.AVCaptureSessionDidStartRunning, object: nil)
+        }
+    
+    @objc func captureSessionBegan(_ notification: Notification) {
+        guard let device = AVCaptureDevice.default(for: AVMediaType.video) else {return}
+        if device.torchMode == .off && isTorchEnabled {
+            toggleFlash()
+        }
     }
     
     private func setupConstraints() {
